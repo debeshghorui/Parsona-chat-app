@@ -1,5 +1,7 @@
 import { OpenAI } from 'openai';
 import { ChatCompletionMessageParam } from 'openai/resources/chat/completions.mjs';
+
+import { youtubeSearch } from '../tools';
 import { getPersona } from '../parsona';
 
 
@@ -81,27 +83,48 @@ export async function aiCall( intent: string, prompt = '', personaId: string, me
         { role: 'user', content: prompt }
     ] as unknown as ChatCompletionMessageParam[];
 
-    const response = await client.chat.completions.create({
-        model: getAI(intent),
-        messages: MESSAGES_DB as unknown as ChatCompletionMessageParam[],
-    });
+    while (true) {
+        const response = await client.chat.completions.create({
+            model: getAI(intent),
+            messages: MESSAGES_DB as unknown as ChatCompletionMessageParam[],
+        });
 
-    const rawResult = response.choices[0].message.content;
+        const rawResult = response.choices[0].message.content;
 
-    console.log({ "ai-calls": rawResult });
-    console.log("\n\n");
+        console.log({ "ai-calls": rawResult });
+        console.log("\n\n");
 
-    logAiCall({
-        intent,
-        personaId,
-        model: getAI(intent),
-        systemPrompt: getPersona(personaId, intent) as string,
-        usage: response.usage,
-    });
+        logAiCall({
+            intent,
+            personaId,
+            model: getAI(intent),
+            systemPrompt: getPersona(personaId, intent) as string,
+            usage: response.usage,
+        });
 
-    const parsedResult = JSON.parse(rawResult ?? '');
+        const parsedResult = JSON.parse(rawResult ?? '');
 
-    return parsedResult.text;
+        console.log(`🤖 [${parsedResult.step}] : ${parsedResult.text}`);
+
+        if (parsedResult.step === 'OUTPUT') {
+            return parsedResult.text;
+        }
+
+        if (parsedResult.step === 'TOOL_REQUEST') {
+            const toolName = parsedResult.functionName;
+            const toolInput = parsedResult.input;
+
+            switch (toolName) {
+                case "youtubeSearch":
+                    const ytData = await youtubeSearch(toolInput);
+                    MESSAGES_DB.push({ role: 'developer', content: JSON.stringify({ step: 'TOOL_OUTPUT', text: ytData }) });
+                    continue;
+                default:
+                    MESSAGES_DB.push({ role: 'developer', content: `❌ Tool ${toolName} not found` });
+                    continue;
+            }
+        }
+    }
 }
 
 export default aiCall;
