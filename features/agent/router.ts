@@ -23,8 +23,11 @@ export async function router(prompt: string, personaId: string, messages: any[])
             return await aiCall(intent.intent as string, prompt, personaId, messages);
         case 'tech_question':
             return await aiCall(intent.intent as string, prompt, personaId, messages);
-        case 'tool_needed':
+        case 'not_relevant':
             return await aiCall(intent.intent as string, prompt, personaId, messages);
+        case 'out_of_topic':
+        case 'abuse_the_app':
+            return "Sorry, I can't help with that. Please try again.";
         default:
             return "I'm sorry, I don't understand your question. Please try again.";
     }

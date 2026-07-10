@@ -1,8 +1,8 @@
 import { OpenAI } from "openai";
 
 import { SYSTEM_INSTRUCTION } from "../system_prompt";
-import { AgentResult, FALLBACK_RESULT } from "..";
-import { parseModelJson } from "..";
+import { parseModelJson } from "../utils/parse-model-json";
+import { AgentResult, FALLBACK_RESULT } from "../utils/types/agent-result";
 
 const openRouterClient = new OpenAI({
     baseURL: "https://openrouter.ai/api/v1",
